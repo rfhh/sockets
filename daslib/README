@@ -1,0 +1,25 @@
+1. cd to  daslib/lib/i386_Linux
+
+2. Edit Makefile. Modify
+   DASLIB	= .... the path where you installed daslib
+
+3. make
+
+4. To run, the daslib calls also need a server
+   process running on some local machine.
+   You need to specify which host and port in a file on a well-known
+   location (e.g. on the shared file system or replicated across
+   all machines).
+   This file should be named in daslib/src/das_inet/das_inet_sync.c,
+   where you should specify das_srv_location as the name of the file
+   that contains the hostname and port number where the server process
+   runs.
+
+   That file should contain the line:
+
+   <.... the host of where your server process runs ...> 3456
+
+   The server process is a Java program (no less!) Prun_server.java,
+   found in DASLIB/prun-server.
+   Just keep it alive forever on your specified server host.
+

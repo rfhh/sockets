@@ -1,0 +1,28 @@
+#!/bin/bash
+
+# RAFB: use absolute path name for java
+# set JAVA=/usr/local/bin/java
+# set JAVA=/usr/local/ibm-java/IBMJava2-13/bin/java
+# set JAVA=/usr/local/ibm-java/IBMJava2-141/bin/java
+JAVAC="javac -classpath ."
+JAVA="java -classpath ."
+
+if [ DasSyncServer.class -ot DasSyncServer.java ] ; then
+	$JAVAC DasSyncServer.java
+fi
+
+# cd /usr/local/VU/reserve/src/prun_server
+
+# Linux does not allow to raise this limit!!! RFHH: limit openfiles unlimited
+# limit openfiles 10000
+# set server_options = "-timeout 900"
+server_options=""
+# set logdir = /usr/local/sitedep/reserve
+logdir=.
+
+n=0
+while true ; do
+	$JAVA DasSyncServer $server_options >& $logdir/DasSyncServer.$n.log
+        sleep 60
+	n=$(( $n + 1 ))
+done
