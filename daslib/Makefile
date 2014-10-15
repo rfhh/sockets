@@ -128,7 +128,10 @@ OBJ		= $(SRC:%.c=%.o)
 module:		$(LIB)
 		@#echo Module $(MODULE) done
 
-$(LIB):		$(OBJ)
+.PHONY:		ALWAYS
+ALWAYS:
+
+$(LIB):		$(OBJ) ALWAYS
 		$(AR) $(ARFLAGS) $(LIB) $(OBJ)
 ifdef RANLIB
 		$(RANLIB) $(LIB)
