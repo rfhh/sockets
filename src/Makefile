@@ -11,6 +11,7 @@ LIB		= ../lib/libtcp_socket.a
 default:	lib
 
 lib: $(OBJ)
+	-mkdir -p $(shell dirname $(LIB))
 	$(AR) $(ARFLAGS) $(LIB) $(OBJ)
 
 clean:
