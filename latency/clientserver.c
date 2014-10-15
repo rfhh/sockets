@@ -107,12 +107,11 @@ main(int argc, char *argv[])
 		// usleep(10000);
 		hmr_tcp_socket_clear(fd);
 
-		free(roundtrip);
-		free(buffer);
-
 		for (int i = 0; i < n; i++) {
 			printf("%.9lf\n", das_time_t2d(&roundtrip[i]));
 		}
+
+		free(roundtrip);
 
 	} else {
 		int client_fd = hmr_tcp_socket_accept(fd);
@@ -129,6 +128,8 @@ main(int argc, char *argv[])
 			}
 		}
 	}
+
+	free(buffer);
 
     return 0;
 }
