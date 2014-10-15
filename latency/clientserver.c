@@ -4,6 +4,7 @@
 #include <stdarg.h>
 #include <string.h>
 #include <limits.h>
+#include <unistd.h>
 #include <errno.h>
 
 #include <hmr/tcp_socket.h>
@@ -32,11 +33,13 @@ error(const char *fmt, ...)
 int
 main(int argc, char *argv[])
 {
-    int         n = 1000000;
+    size_t      n = 100000;
     size_t      size = 1;
     int         options = 0;
     const char *if_name = NULL;
 	int			client = -1;
+
+	das_time_init(&argc, argv);
 
     for (int i = 1; i < argc; i++) {
         if (0) {
@@ -47,21 +50,24 @@ main(int argc, char *argv[])
 			client = 0;
 		} else if (strcmp(argv[i], "-c") == 0) {
 			client = 1;
-        } else if (options == 0) {
-            if (sscanf(argv[i], "%d", &n) != 1) {
-                error("<nmsg> must be an int, not \"%s\"", argv[i]);
-            }
+		} else if (strcmp(argv[i], "-h") == 0) {
+			printf("Options:\n");
+			printf("    -i <interface>\n");
+			printf("    -s                run as server\n");
+			printf("    -c                run as client\n");
+			printf("    -das-sync-server <registry host>\n");
+        } else if (options == 0 && scanf(argv[i], "%zd", &n) == 1) {
             options++;
-        } else if (options == 1) {
-            if (sscanf(argv[i], "%zd", &size) != 1) {
-                error("<size> must be an int, not \"%s\"", argv[i]);
-            }
+        } else if (options == 1 && sscanf(argv[i], "%zd", &size) == 1) {
             options++;
         }
     }
 
 	if (client == -1) {
 		error("specify -s (server) or -c (client)");
+	}
+	if (if_name == NULL) {
+		error("specify -i <interface>");
 	}
 
 	int fd = hmr_tcp_socket(if_name);
@@ -80,6 +86,7 @@ main(int argc, char *argv[])
     }
 
 	if (client) {
+		fprintf(stderr, "sleep(1) to allow server to post accept\n");
 		sleep(1);	// allow accept
 		if (hmr_tcp_socket_connect(fd, (const struct sockaddr *)&remote_addr[0]) == -1) {
 			error("tcp connect");
@@ -92,22 +99,19 @@ main(int argc, char *argv[])
 			error("malloc roundtrip");
 		}
 
-		for (int i = 0; i < n; i++) {
+		for (size_t i = 0; i < n; i++) {
 			das_time_get(&t_start);
 			if (hmr_tcp_write_fully(fd, buffer, size) == -1) {
-				error("Cannot write msg %d", i);
+				error("Cannot write msg %zd", i);
 			}
 			if (hmr_tcp_read_fully(fd, buffer, size) == -1) {
-				error("Cannot read msg %d", i);
+				error("Cannot read msg %zd", i);
 			}
 			das_time_get(&t_stop);
 			roundtrip[i] = t_stop - t_start;
 		}
 
-		// usleep(10000);
-		hmr_tcp_socket_clear(fd);
-
-		for (int i = 0; i < n; i++) {
+		for (size_t i = 0; i < n; i++) {
 			printf("%.9lf\n", das_time_t2d(&roundtrip[i]));
 		}
 
@@ -119,7 +123,7 @@ main(int argc, char *argv[])
 			error("tcp accept");
 		}
 
-		for (int i = 0; i < n; i++) {
+		for (size_t i = 0; i < n; i++) {
 			if (hmr_tcp_read_fully(client_fd, buffer, size) == -1) {
 				error("Cannot read msg %d", i);
 			}
@@ -127,7 +131,13 @@ main(int argc, char *argv[])
 				error("Cannot write msg %d", i);
 			}
 		}
+
+		usleep(10000);
+		hmr_tcp_socket_clear(client_fd);
 	}
+
+	// usleep(10000);
+	hmr_tcp_socket_clear(fd);
 
 	free(buffer);
 

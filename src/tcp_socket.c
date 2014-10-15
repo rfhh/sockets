@@ -21,11 +21,14 @@
 #include <errno.h>
 #include <string.h>
 #include <limits.h>
+#include <unistd.h>
+#include <fcntl.h>
 
 #include <das_inet_sync.h>
 
 #include <hmr/tcp_socket.h>
 
+#define SET_NODELAY		1
 
 static int
 fill_addr(struct sockaddr_in *addr, const char *interface_name, in_port_t port)
@@ -83,15 +86,32 @@ hmr_tcp_socket(const char *interface_name)
         return -1;
     }
 
+#if SET_NODELAY
     int one = 1;
     if (setsockopt(fd, IPPROTO_TCP, TCP_NODELAY, &one, sizeof one) == -1) {
         goto error;
     }
+#endif
 
 	return fd;
 
 error:
 	return -1;
+}
+
+
+int
+hmr_socket_set_nonblocking(int fd)
+{
+	int flags = fcntl(fd, F_GETFL);
+	if (flags == -1) {
+		return -1;
+	}
+	if (fcntl(fd, F_SETFL, flags | O_NONBLOCK, sizeof flags) == -1) {
+		return -1;
+	}
+
+	return 0;
 }
 
 
@@ -133,6 +153,13 @@ hmr_tcp_socket_accept(int server_fd)
 
     fprintf(stderr, "Accept connection: my fd %d, peer %s/%" PRId16 "\n",
             fd, inet_ntoa(addr.sin_addr), ntohs(addr.sin_port));
+
+#if SET_NODELAY
+    int one = 1;
+    if (setsockopt(fd, IPPROTO_TCP, TCP_NODELAY, &one, sizeof one) == -1) {
+        goto error;
+    }
+#endif
 
     return fd;
 

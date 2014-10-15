@@ -17,6 +17,7 @@ int hmr_tcp_exchange_addr(int fd,
 						  size_t me, size_t n,
 						  int *argc, char *argv[]);
 
+int hmr_socket_set_nonblocking(int fd);
 
 #include <errno.h>
 
@@ -28,6 +29,11 @@ hmr_tcp_read_fully(int fd, void *data, size_t len)
     while (rd < len) {
         ssize_t r = read(fd, (char *)data + rd, len - rd);
         if (r == -1) {
+			if (errno == EAGAIN) {
+				// Or poll for POLLIN?
+				errno = 0;
+				continue;
+			}
             if (errno == EINTR) {
                 errno = 0;
                 continue;
@@ -55,6 +61,12 @@ hmr_tcp_write_fully(int fd, const void *data, size_t len)
     while (rd < len) {
         ssize_t r = write(fd, (const char *)data + rd, len - rd);
         if (r == -1) {
+			if (errno == EAGAIN) {
+				// Or poll for POLLOUT?
+				errno = 0;
+				continue;
+			}
+
             if (errno == EINTR) {
                 errno = 0;
                 continue;
